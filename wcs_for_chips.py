@@ -48,7 +48,7 @@ y_off = hdu_list[0].header['CRPIX1']
 #                       names = ('x','y'), format = 'ascii')
 vvv = Table.read('/Users/amartinez/Desktop/PhD/Catalogs/VVV/b333/PMS/b333.dat', format = 'ascii')
 # %%
-chip = 1
+chip = 2
 use_idx = vvv['J']<900
 vvv_data = vvv[use_idx]
 
@@ -150,8 +150,26 @@ y_gns = gns['y']
 xy_gns = np.c_[x_gns,y_gns]
 
 xy_vvv = np.vstack((vvv_overlap['x'][idx],vvv_overlap['y'][idx])).T
+# Astroalign does not work when repeated value appears in the same array
+xy_test, idx_u, = np.unique(xy_vvv, axis=0, return_index=True)
+xy_vvv_unique = xy_vvv[np.sort(idx_u)]
+# sys.exit(154)
+# fig, ax = plt.subplots(1,1)
+# ax.scatter(xy_vvv[:,0],xy_vvv[:,1], s =20)
+# ax.scatter(xy_vvv_unique[:,0],xy_vvv_unique[:,1], s =1)
 
-p, (pos_img, pos_img_t) = aa.find_transform(xy_gns, xy_vvv, max_control_points=200)
+# sys.exit(154)
+p, (pos_img, pos_img_t) = aa.find_transform(xy_gns, xy_vvv_unique, max_control_points=200)
+# %%
+# # Check for duplicate entries in xy_gns and xy_vvv
+# unique_gns, counts_gns = np.unique(xy_gns, axis=0, return_counts=True)
+# duplicate_gns = unique_gns[counts_gns > 1]
+
+# unique_vvv, counts_vvv = np.unique(xy_vvv, axis=0, return_counts=True)
+# duplicate_vvv = unique_vvv[counts_vvv > 1]
+
+# print("Duplicate entries in xy_gns:", duplicate_gns)
+# print("Duplicate entries in xy_vvv:", duplicate_vvv)
 # %%
 fig, (ax1,ax2) = plt.subplots(1,2)
 ax1.scatter(pos_img[:,0],pos_img[:,1])
@@ -198,6 +216,70 @@ vvv_com_xy.write(pruebas + 'vvv_c%s_com.txt'%(chip), format = 'ascii',overwrite=
 vvv_com_ad = SkyCoord(ra = vvv_com['ra'],dec = vvv_com['dec'],unit = 'degree')
 xy_com = np.vstack((pos_img[:,0],pos_img[:,1]))
 wcs_new = fit_wcs_from_points(xy_com, vvv_com_ad, projection="TAN")
+
+# %%
+# Define the input files
+fits_files = [f for f in os.listdir(folder) if f.endswith('.fits')]
+output_file = pruebas + 'combined_cube.fits'
+
+for ch in range(3,4):
+# Create a primary HDU (the first extension should always be the primary HDU)
+    primary_hdu = fits.PrimaryHDU()
+    list_of_hdu = [primary_hdu]
+    dic_header = {} 
+    dic_header_ = {}
+# Loop through the FITS files
+
+    # for n,fil in enumerate(fits_files):
+    for n in range(0,1):
+        # Open the FITS file
+        hdulist = fits.open(folder + fits_files[n])
+        # There are 8 images in each file; we take the first 7
+        data_cube = hdulist[0].data
+        header = hdulist[0].header  # Get the header from the corresponding extension
+        dic_header['h%s'%(n+1)] = header
+        for i in range(7):
+            # Get the data and header for each image (extension)
+            if ch ==1:
+                data = data_cube[i][0:2048,0:2048]# Use i+1 since the first is the PrimaryHDU
+                wcs_header = wcs_new.to_header()
+            if ch == 2:
+                data = data_cube[i][0:2048,2048:]
+                wcs_header = wcs_new.to_header()
+            if ch == 3:
+                data = data_cube[i][2048:,2048:]
+                wcs_header = wcs_new.to_header()
+            if ch == 4:
+                data = data_cube[i][2048:,0:2048]
+                wcs_header = wcs_new.to_header()
+            
+            
+            # Create an ImageHDU with the data and the corresponding header
+            image_hdu = fits.ImageHDU(data=data, header=header)
+            image_hdu = fits.ImageHDU(data=data, header=wcs_header)
+            dic_header_['h%s'%(i)] = header
+            # Add the new ImageHDU to the HDUList
+            list_of_hdu.append(image_hdu)
+    
+    # Create the HDUList object
+    combined_hdul = fits.HDUList(list_of_hdu)
+    
+    # Write to a new file, removing the last slice from each original cube (so 7 from each)
+    combined_hdul.writeto(pruebas  +'test_f20_c%s.fits'%(ch), overwrite=True)
+
+    print('FITS file F%sc%s created.'%(field, ch))
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
