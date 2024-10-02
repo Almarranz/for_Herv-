@@ -18,12 +18,13 @@ import astroalign as aa
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 import matplotlib.pyplot as plt
+from astropy.wcs.utils import fit_wcs_from_points
 
 # %
 
 folder = '/Users/amartinez/Desktop/for_people/for_Herve/gns2/F20/'
 pruebas = '/Users/amartinez/Desktop/for_people/for_Herve/pruebas/'
-chip = 1
+
 
 field = 20
 
@@ -47,7 +48,7 @@ y_off = hdu_list[0].header['CRPIX1']
 #                       names = ('x','y'), format = 'ascii')
 vvv = Table.read('/Users/amartinez/Desktop/PhD/Catalogs/VVV/b333/PMS/b333.dat', format = 'ascii')
 # %%
-
+chip = 1
 use_idx = vvv['J']<900
 vvv_data = vvv[use_idx]
 
@@ -106,11 +107,10 @@ vvv_overlap.sort('J')
 x_vvv = vvv_overlap['x']
 y_vvv = vvv_overlap['y']
 # xh = naxis1/2
-yh = naxis1/2
+
 
 xh = (max(x_vvv) + min(x_vvv))/2
 yh = (max(y_vvv) + min(y_vvv))/2
-chip= 4
 #crop list for each chip
 if (chip == 1):
     idx = np.nonzero((x_vvv < xh) & (y_vvv < yh))
@@ -140,18 +140,64 @@ ax.axvline(xh, color = 'r')
 vvv_overlap[idx][0:1000].write(pruebas + 'vvv_test_c%s.txt'%(chip), format = 'ascii', overwrite = True)
 # vvv_overlap.write(pruebas + 'vvv_test_all.txt', format = 'ascii', overwrite = True)
 
+#
+
+gns = Table.read(folder + 'dejitter_stars_%s_53.txt'%(chip), format = 'ascii')
+
+x_gns = gns['x']
+y_gns = gns['y']
+
+xy_gns = np.c_[x_gns,y_gns]
+
+xy_vvv = np.vstack((vvv_overlap['x'][idx],vvv_overlap['y'][idx])).T
+
+p, (pos_img, pos_img_t) = aa.find_transform(xy_gns, xy_vvv, max_control_points=200)
 # %%
+fig, (ax1,ax2) = plt.subplots(1,2)
+ax1.scatter(pos_img[:,0],pos_img[:,1])
+ax2.scatter(pos_img_t[:,0],pos_img_t[:,1])
+# %%
+# %
+# # Assuming 'vvv_overlap' is your astropy table and 'x_vvv' is your numpy array
+x_vvv = pos_img_t  # (106, 2) numpy array with x, y coordinates
 
-# gns = Table.read(folder + 'dejitter_stars_1_53.txt', format = 'ascii')
+# Extract 'x' and 'y' from vvv_overlap table as numpy arrays
+x_overlap = np.array(vvv_overlap['x'][idx])
+y_overlap = np.array(vvv_overlap['y'][idx])
 
-# x_gns = gns['x']
-# y_gns = gns['y']
+# Initialize an empty list to store indices
+indices = []
 
-# xy_gns = np.c_[x_gns,y_gns]
+# Loop through each point in x_vvv and find the matching indices in vvv_overlap
+for coord in x_vvv:
+    x, y = coord
+    # Find the indices where both x and y match in vvv_overlap
+    index = np.where((x_overlap == x) & (y_overlap == y))[0]
+    
+    # If a match is found, append the index
+    if index.size > 0:
+        indices.append(index[0])  # Assuming one-to-one match
+    else:
+        indices.append(-1)  # Append -1 for unmatched points
 
-# xy_vvv = np.vstack((vvv_overlap['x'],vvv_overlap['y'])).T
+# Convert indices list to numpy array for easier handling
+indices = np.array(indices)
 
-# p, (pos_img, pos_img_t) = aa.find_transform(xy_gns, xy_vvv, max_control_points=200)
+# Print or return the indices
+print(indices)
+vvv_com = vvv_overlap[idx][indices]
+vvv_com.write(pruebas + 'vvv_common_c%s.txt'%(chip), format = 'ascii', overwrite = True)
+
+# %%
+gns_com_xy = Table(pos_img, names = ('x','y'))
+vvv_com_xy = Table(pos_img_t, names = ('x','y'))
+gns_com_xy.write(pruebas + 'gns_c%s_com.txt'%(chip), format = 'ascii',overwrite=True)
+vvv_com_xy.write(pruebas + 'vvv_c%s_com.txt'%(chip), format = 'ascii',overwrite=True)
+# %%
+# vvv_com_ad = np.c_[vvv_com['ra'],vvv_com['dec']]
+vvv_com_ad = SkyCoord(ra = vvv_com['ra'],dec = vvv_com['dec'],unit = 'degree')
+xy_com = np.vstack((pos_img[:,0],pos_img[:,1]))
+wcs_new = fit_wcs_from_points(xy_com, vvv_com_ad, projection="TAN")
 
 
 
