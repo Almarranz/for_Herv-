@@ -25,14 +25,15 @@ from astropy.wcs.utils import fit_wcs_from_points
 folder = '/Users/amartinez/Desktop/for_people/for_Herve/gns2/F20/'
 pruebas = '/Users/amartinez/Desktop/for_people/for_Herve/pruebas/'
 sf_folder = '/Users/amartinez/Desktop/for_people/for_Herve/gns2/F20/stars_lists/'
-
-
+###########IMPORTANT################
+# list of raw images is in /home/data/raw/GNS_2/H/Field/20
+####################################
 field = 20
 # chip = 2
 # Define the input files
 for chip in range(1,2):
-    # fits_files = [f for f in os.listdir(folder) if f.endswith('.fits') and f.startswith('HAWKI')]
-    fits_files = ['HAWKI.2022-08-02T00:54:39.570.fits']
+    fits_files = [f for f in os.listdir(folder) if f.endswith('.fits') and f.startswith('HAWKI')]
+    # fits_files = ['HAWKI.2022-08-02T00:54:39.570.fits','HAWKI.2022-08-02T00:56:08.395.fits']
     primary_hdu = fits.PrimaryHDU()
     list_of_hdu = [primary_hdu]
     for nf,f_file in enumerate(fits_files):
@@ -237,7 +238,14 @@ for chip in range(1,2):
             
         # Write to a new file, removing the last slice from each original cube (so 7 from each)
     # combined_hdul.writeto(pruebas  +'test_f20_c%s.fits'%(chip), overwrite=True)
-    combined_hdul.writeto(pruebas  +'small_test_f20_c%s.fits'%(chip), overwrite=True)
+    del combined_hdul[35]  
+    del combined_hdul[34]  
+    del combined_hdul[33]  
+    del combined_hdul[14]  # Extension 15 is at index 14
+    del combined_hdul[7]   # Extension 8 is at index 7
+    del combined_hdul[6]   # Extension 7 is at index 6 (since we just deleted the previous extension 7)
+
+    combined_hdul.writeto(pruebas  +'%s_pointings_f20_c%s.fits'%(len(fits_files),chip), overwrite=True)
     print('FITS file F%sc%s created.'%(field, chip))
 
 
