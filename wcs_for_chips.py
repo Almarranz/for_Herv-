@@ -19,7 +19,8 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 import matplotlib.pyplot as plt
 from astropy.wcs.utils import fit_wcs_from_points
-
+import shutil
+import gzip
 # %
 # %%
 folder = '/Users/amartinez/Desktop/for_people/for_Herve/gns2/F20/'
@@ -247,35 +248,7 @@ for chip in range(1,2):
 
     combined_hdul.writeto(pruebas  +'%s_pointings_f20_c%s.fits'%(len(fits_files),chip), overwrite=True)
     print('FITS file F%sc%s created.'%(field, chip))
-
-
-# # %%
-# # Updated originals headers
-
-# for card in wcs_header.cards:
-#     print('NEW')
-#     print(card[0],card[1])
-    
-#     try:
-#         print(card[0],header[card[0]])
-#         print(10*'_')
-#     except:
-#         print(f'None {card[0]}')
-#         print(10*'_')
-# # %%
-# for card in wcs_header.cards:
-#     # If the key already exists, it will be replaced, otherwise it will be added
-#     header[card.keyword] = card.value
-
-
-
-
-
-
-
-
-
-
+# %%
 
 
 

@@ -16,11 +16,11 @@ pruebas = '/Users/amartinez/Desktop/for_people/for_Herve/pruebas/'
 
 field = 20
 for chip in range(2, 3):
-    folder = pruebas
+    folder = '/home/data/alvaro/gns_test/F%s/SWarp/chip2%s/'%(field, chip)
     fits_files = [f for f in sorted(os.listdir(folder)) if f.endswith('.fits') and f.startswith('70_pointings_f%s_c%s' % (field, chip))]
     
     for nf, f_file in enumerate(fits_files):
-        hdul = fits.open(pruebas + f_file)
+        hdul = fits.open(folder + f_file)
         image_data = hdul[0].data
         ejes = [hdul[0].header['NAXIS1'], hdul[0].header['NAXIS2']]
         print(f'Working with {f_file}')

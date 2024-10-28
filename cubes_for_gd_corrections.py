@@ -23,16 +23,20 @@ import shutil
 import gzip
 # %
 # %%
+field = 20
+
+
 folder = '/Users/amartinez/Desktop/for_people/for_Herve/gns2/F20/'
 pruebas = '/Users/amartinez/Desktop/for_people/for_Herve/pruebas/'
 sf_folder = '/Users/amartinez/Desktop/for_people/for_Herve/gns2/F20/stars_lists/'
 clean = '/Users/amartinez/Desktop/for_people/for_Herve/gns2/F20/cleaned/'
 VVV_fol = '/Users/amartinez/Desktop/PhD/Catalogs/VVV/b333/PMS/'
-
 ###########IMPORTANT################
-# list of raw images is in /home/data/raw/GNS_2/H/Field/20
+# list of raw images and raw images are in /home/data/raw/GNS_2/H/Field/20
+# list of cleand cubes is in '/home/data/GNS/2021/H/20/cleaned'
+# list of starfinder stars is in '/home/data/GNS/2021/H/20/data'
 ####################################
-field = 20
+
 
 vvv = Table.read(VVV_fol + 'b333.dat', format = 'ascii')
 lista = open(folder + 'list.txt', 'r')
