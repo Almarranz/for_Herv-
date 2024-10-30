@@ -31,17 +31,23 @@ pruebas = '/Users/amartinez/Desktop/for_people/for_Herve/pruebas/'
 sf_folder = '/Users/amartinez/Desktop/for_people/for_Herve/gns2/F20/stars_lists/'
 clean = '/Users/amartinez/Desktop/for_people/for_Herve/gns2/F20/cleaned/'
 VVV_fol = '/Users/amartinez/Desktop/PhD/Catalogs/VVV/b333/PMS/'
+# ims = '/home/data/GNS/2021/H/20/ims/'
+ims = '/Users/amartinez/Desktop/for_people/for_Herve/gns2/F20/ims/'
 ###########IMPORTANT################
 # list of raw images and raw images are in /home/data/raw/GNS_2/H/Field/20
 # list of cleand cubes is in '/home/data/GNS/2021/H/20/cleaned'
 # list of starfinder stars is in '/home/data/GNS/2021/H/20/data'
+# mask for all the chip is un '/home/data/GNS/2021/H/20/ims/mask.fits'
 ####################################
 
 
 vvv = Table.read(VVV_fol + 'b333.dat', format = 'ascii')
-lista = open(folder + 'list.txt', 'r')
+lista = open(folder + 'list_clip.txt', 'r')
 lines = len(lista.readlines())# This is closing lista. I have to reopen it
-lista = open(folder + 'list.txt', 'r')
+lista = open(folder + 'list_clip.txt', 'r')
+# %%
+hdu_m = fits.open(ims + 'mask.fits')
+data_m = hdu_m[0].data
 # %%
 primary_hdu_c1 = fits.PrimaryHDU()
 list_of_hdu_c1 = [primary_hdu_c1]
@@ -54,6 +60,20 @@ list_of_hdu_c3 = [primary_hdu_c3]
 
 primary_hdu_c4 = fits.PrimaryHDU()
 list_of_hdu_c4 = [primary_hdu_c4]
+
+# Preparing headers for the masks
+primary_hdu_m1 = fits.PrimaryHDU()
+list_of_hdu_m1 = [primary_hdu_m1]
+
+primary_hdu_m2 = fits.PrimaryHDU()
+list_of_hdu_m2 = [primary_hdu_m2]
+
+primary_hdu_m3 = fits.PrimaryHDU()
+list_of_hdu_m3 = [primary_hdu_m3]
+
+primary_hdu_m4 = fits.PrimaryHDU()
+list_of_hdu_m4 = [primary_hdu_m4]
+
 for li,l in enumerate(lista):
     
     print(30*'*')
@@ -62,6 +82,7 @@ for li,l in enumerate(lista):
     
     orig_header = fits.getheader(folder + l.strip())
     print(li)
+    #Unzip the cubes
     with gzip.open(clean + 'cube%s.fits.gz'%(li+1),'rb') as f_in:
         with open(clean + 'cube%s.fits'%(li+1),'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
@@ -194,29 +215,32 @@ for li,l in enumerate(lista):
         
         data_cube = cube[0].data
         header = cube[0].header  # Get the header from the corresponding extension
+        
+        m_cube = np.stack([data_m]*cube[0].header['NAXIS3'], axis = 0)
         for i in range(cube[0].header['NAXIS3']):
+            
             # Get the data and header for each image (extension)
             if chip ==1:
                 data = data_cube[i][0:2048,0:2048]# Use i+1 since the first is the PrimaryHDU
-                wcs_header = wcs_new.to_header()
-                
+                wcs_header = wcs_new.to_header()                
+                m_data = m_cube[i][0:2048,0:2048]
                 for card in wcs_header.cards:
                     # If the key already exists, it will be replaced, otherwise it will be added
                     header[card.keyword] = card.value
                 # Create an ImageHDU with the data and the corresponding header
-                # image_hdu = fits.ImageHDU(data=data, header=wcs_header)
                 image_hdu = fits.ImageHDU(data=data, header=header)
+                m_hdu =     fits.ImageHDU(data = m_data, header = header)
                 
                 # Add the new ImageHDU to the HDUList
                 list_of_hdu_c1.append(image_hdu)
-
+                list_of_hdu_m1.append(m_hdu)
                 # Create the HDUList object
                 combined_hdul_c1 = fits.HDUList(list_of_hdu_c1)
-               
+                combined_hdul_m1 = fits.HDUList(list_of_hdu_m1)
             if chip == 2:
                 data = data_cube[i][0:2048,2048:]
-                
                 wcs_header = wcs_new.to_header()
+                m_data = m_cube[i][0:2048,2048:]
                 
                 for card in wcs_header.cards:
                     # If the key already exists, it will be replaced, otherwise it will be added
@@ -224,49 +248,57 @@ for li,l in enumerate(lista):
                 # Create an ImageHDU with the data and the corresponding header
                 # image_hdu = fits.ImageHDU(data=data, header=wcs_header)
                 image_hdu = fits.ImageHDU(data=data, header=header)
-                
+                m_hdu =     fits.ImageHDU(data = m_data, header = header)
                 # Add the new ImageHDU to the HDUList
                 list_of_hdu_c2.append(image_hdu)
+                list_of_hdu_m2.append(m_hdu)
 
                 # Create the HDUList object
                 combined_hdul_c2 = fits.HDUList(list_of_hdu_c2)
+                combined_hdul_m2 = fits.HDUList(list_of_hdu_m2)
                 
             if chip == 3:
                 data = data_cube[i][2048:,2048:]
-                
                 wcs_header = wcs_new.to_header()
                 
+                m_data = m_cube[i][2048:,2048:]
                 for card in wcs_header.cards:
                     # If the key already exists, it will be replaced, otherwise it will be added
                     header[card.keyword] = card.value
                 # Create an ImageHDU with the data and the corresponding header
                 # image_hdu = fits.ImageHDU(data=data, header=wcs_header)
                 image_hdu = fits.ImageHDU(data=data, header=header)
+                m_hdu = fits.ImageHDU(data=m_data, header=header)
                 
                 # Add the new ImageHDU to the HDUList
                 list_of_hdu_c3.append(image_hdu)
+                list_of_hdu_m3.append(m_hdu)
 
                 # Create the HDUList object
                 combined_hdul_c3 = fits.HDUList(list_of_hdu_c3)
+                combined_hdul_m3 = fits.HDUList(list_of_hdu_m3)
                 
                
             if chip == 4:
                 data = data_cube[i][2048:,0:2048]
-                
                 wcs_header = wcs_new.to_header()
                 
+                m_data = m_cube[i][2048:,0:2048]
                 for card in wcs_header.cards:
                     # If the key already exists, it will be replaced, otherwise it will be added
                     header[card.keyword] = card.value
                 # Create an ImageHDU with the data and the corresponding header
                 # image_hdu = fits.ImageHDU(data=data, header=wcs_header)
                 image_hdu = fits.ImageHDU(data=data, header=header)
+                m_hdu = fits.ImageHDU(data=m_data, header=header)
                 
                 # Add the new ImageHDU to the HDUList
                 list_of_hdu_c4.append(image_hdu)
+                list_of_hdu_m4.append(m_hdu)
 
                 # Create the HDUList object
                 combined_hdul_c4 = fits.HDUList(list_of_hdu_c4)
+                combined_hdul_m4 = fits.HDUList(list_of_hdu_m4)
     os.remove(clean + 'cube%s.fits'%(li+1))
     # if li == 0:
     #     break    
@@ -277,6 +309,11 @@ combined_hdul_c1.writeto(pruebas  +'%s_pointings_f20_c%s.fits'%(lines,1), overwr
 combined_hdul_c2.writeto(pruebas  +'%s_pointings_f20_c%s.fits'%(lines,2), overwrite=True)
 combined_hdul_c3.writeto(pruebas  +'%s_pointings_f20_c%s.fits'%(lines,3), overwrite=True)
 combined_hdul_c4.writeto(pruebas  +'%s_pointings_f20_c%s.fits'%(lines,4), overwrite=True)
+
+combined_hdul_m1.writeto(pruebas  +'MASK_%s_pointings_f20_c%s.fits'%(lines,1), overwrite=True)
+combined_hdul_m2.writeto(pruebas  +'MASK_%s_pointings_f20_c%s.fits'%(lines,2), overwrite=True)
+combined_hdul_m3.writeto(pruebas  +'MASK_%s_pointings_f20_c%s.fits'%(lines,3), overwrite=True)
+combined_hdul_m4.writeto(pruebas  +'MASK_%s_pointings_f20_c%s.fits'%(lines,4), overwrite=True)
 print('FITS file F%sc%s created.'%(field, chip))
     
 sys.exit()
